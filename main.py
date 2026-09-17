@@ -1,5 +1,8 @@
+def key_add():
+    #Cada elemento do GF(2^8) é um Byte representado em vetor de 8bits (representação matemática de um polinomio), e é feito a soma modulo 2 entre eles na operação de soma (equivale a xor)
+    ...
 def byte_sub():
     ...
-def key_add():
-    ...
+
+#tabela para s-box e galois field, o inverso você olha para o valor resultante e depois para o que resultou
 print("Hello World")
