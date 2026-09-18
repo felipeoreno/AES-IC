@@ -47,6 +47,8 @@ def is_hex(s: int) -> bool:
         
 
 def key_add(A, k): #
+    #A é a matrix estado com elementos em hexadecimal
+    #k é a subchave do tamanho de A com elementos em hexadecimal
     #Cada elemento do GF(2^7) é um Byte representado em vetor de 8bits (representação matemática de um polinomio), e é feito a soma modulo 2 entre eles na operação de soma (equivale a xor)
     return np.bitwise_xor(A,k)
     ...
