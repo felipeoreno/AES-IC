@@ -48,6 +48,7 @@ def is_hex(s: int) -> bool:
 
 def key_add(A, k): #
     #Cada elemento do GF(2^7) é um Byte representado em vetor de 8bits (representação matemática de um polinomio), e é feito a soma modulo 2 entre eles na operação de soma (equivale a xor)
+    return np.bitwise_xor(A,k)
     ...
 def byte_sub(A:np.array): #A é a matrix de estado de hexadecimais
     for i in range(A.shape[0]):
