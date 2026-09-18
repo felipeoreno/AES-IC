@@ -28,10 +28,10 @@ def hex_to_char(h):
     return chr(h)
 
 def hex_low(h): #pega os 4 bits menos significativos
-    return hex(int(h,16)%16)
+    return h & 0x0F
 
 def hex_high(h): #pega os 4 bits mais significativos do número hexadecimal
-    return hex(int(h,16)//16)
+    return h >> 4
 
 def hex_idx(h, axis):
     if axis: #axis == 1, o eixo do hex_low (parte direita do hexadecimal)
