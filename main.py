@@ -44,6 +44,26 @@ def is_hex(s: int) -> bool:
         return True
     except (ValueError, TypeError):
         return False
+
+
+# função para multiplicação em GF(2^8)
+# https://en.wikipedia.org/wiki/Finite_field_arithmetic
+def gf_mul(a: np.uint8, b: np.uint8):
+    p = 0 # produto acumulado
+    for i in range(8):
+        if a == 0 or b == 0:
+            break
+        # adição polinomial
+        if b & 1:
+            p ^= a
+
+        b >>= 1 # divide o polinômio por x
+        carry = a >> 7 # armazena se o bit mais significativo de a é igual a um 1
+        a <<= 1 # multiplica o polinômio por x
+        if(carry):
+            a ^= 0x1b # 0x1b corresponde ao polinômio irredutível sem o termo maior
+
+    return p
         
 
 def key_add(A, k): #
@@ -63,8 +83,10 @@ def byte_sub(A:np.array): #A é a matrix de estado de hexadecimais
             #então a = "P" -> s_box -> "S", no entanto nem todas as transformações resultam em caracteres imprimíveis.
     return A #matrix de estado modificada
 #tabela para s-box e galois field, o inverso você olha para o valor resultante e depois para o que resultou
-def rows_shift():
-    ...
+def rows_shift(A:np.array):
+    A[1,0], A[1,1], A[1,2], A[1,3] = A[1,1], A[1,2], A[1,3], A[1,0]
+    A[2,0], A[2,1], A[2,2], A[2,3] = A[2,2], A[2,3], A[2,0], A[2,1]
+    A[3,0], A[3,1], A[3,2], A[3,3] = A[3,3], A[3,0], A[3,1], A[3,2]
 def columns_mix():
     ...
 print("Hello World")
