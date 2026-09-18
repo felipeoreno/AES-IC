@@ -38,7 +38,7 @@ def hex_idx(h, axis):
         return int(hex_low(h),16)
     return int(hex_high(h),16) #axis == 0, mesmo do hex_high
 
-def is_hex(s: str) -> bool:
+def is_hex(s: int) -> bool:
     try:
         int(s, 16)
         return True
@@ -46,28 +46,22 @@ def is_hex(s: str) -> bool:
         return False
         
 
-def key_add():
+def key_add(A, k): #
     #Cada elemento do GF(2^7) é um Byte representado em vetor de 8bits (representação matemática de um polinomio), e é feito a soma modulo 2 entre eles na operação de soma (equivale a xor)
     ...
-def byte_sub(A):
-    new_A = [] #cria novo vetor de bytes
-    for a in A:
-        if(is_hex(A)): #testa se já é hexadecimal
-            hex_a = a
-        else:
-            hex_a = char_hex(a) #se não for, converte
-        #ex: se a = "P" = 0x50
-        ax0 = hex_idx(hex_a, 0) #ax0 = 5
-        ax1 = hex_idx(hex_a, 1) #ax1 = 0
-        a = s_box[ax0,ax1] #s_box(5,0) = 0x53 = "S"
-        #então a = "P" -> s_box -> "S", no entanto nem todas as transformações resultam em caracteres imprimíveis.
-        new_A.append(a)
-    return new_A
+def byte_sub(A:np.array): #A é a matrix de estado de hexadecimais
+    for i in range(A.shape[0]):
+        for j in range(A.shape[1]):
+            hex_a = A[i,j]
+            #ex: se a = "P" = 0x50
+            ax0 = hex_idx(hex_a, 0) #ax0 = 5
+            ax1 = hex_idx(hex_a, 1) #ax1 = 0
+            A[i,j] = s_box[ax0,ax1] #s_box(5,0) = 0x53 = "S"
+            #então a = "P" -> s_box -> "S", no entanto nem todas as transformações resultam em caracteres imprimíveis.
+    return A #matrix de estado modificada
 #tabela para s-box e galois field, o inverso você olha para o valor resultante e depois para o que resultou
 def rows_shift():
     ...
 def columns_mix():
-    ...
-def key_add():
     ...
 print("Hello World")
