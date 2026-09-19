@@ -74,19 +74,17 @@ def sub_word(w: np.array):
     return w_sub
 
 
-# função para multiplicação em GF(2^8)
+# função para multiplicação em GF(2^7)
 # https://en.wikipedia.org/wiki/Finite_field_arithmetic
-def gf_mul(a: np.uint8, b: np.uint8):
+def gf_mul(a: np.uint8, b: np.uint8) -> np.uint8:
     p = 0 # produto acumulado
-    for i in range(8):
-        if a == 0 or b == 0:
-            break
+    while a != 0 and b != 0:
         # adição polinomial
         if b & 1:
             p ^= a
-
         b >>= 1 # divide o polinômio por x
-        carry = a >> 7 # armazena se o bit mais significativo de a é igual a um 1
+
+        carry = a & 0x80 # armazena se o bit mais significativo de a é igual a um 1
         a <<= 1 # multiplica o polinômio por x
         if(carry):
             a ^= 0x1b # 0x1b corresponde ao polinômio irredutível sem o termo maior
@@ -131,8 +129,18 @@ def rows_shift(A:np.array):
     A[1,0], A[1,1], A[1,2], A[1,3] = A[1,1], A[1,2], A[1,3], A[1,0]
     A[2,0], A[2,1], A[2,2], A[2,3] = A[2,2], A[2,3], A[2,0], A[2,1]
     A[3,0], A[3,1], A[3,2], A[3,3] = A[3,3], A[3,0], A[3,1], A[3,2]
-def columns_mix():
-    ...
+def columns_mix(A:np.array):
+    result = np.zeros((4, 1), dtype=np.uint8)
+    mat = np.array([2, 3, 1, 1], dtype=np.uint8)
+
+    for i in range(4):
+        col = A[:,i]
+        result[0] = gf_mul(mat[0],col[0])^gf_mul(mat[1],col[1])^gf_mul(mat[2],col[2])^gf_mul(mat[3],col[3])
+        result[1] = gf_mul(mat[3],col[0])^gf_mul(mat[0],col[1])^gf_mul(mat[1],col[2])^gf_mul(mat[2],col[3])
+        result[2] = gf_mul(mat[2],col[0])^gf_mul(mat[3],col[1])^gf_mul(mat[0],col[2])^gf_mul(mat[1],col[3])
+        result[3] = gf_mul(mat[1],col[0])^gf_mul(mat[2],col[1])^gf_mul(mat[3],col[2])^gf_mul(mat[0],col[3])
+        A[:,i] = col
+
 print("Hello World")
 
 # ==========================================
