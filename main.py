@@ -20,6 +20,20 @@ s_box = np.array([
     [0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16]
 ], dtype=np.uint8)
 
+#r-con table Round constant table
+rcon = np.array([
+    [0x01, 0x00, 0x00, 0x00],
+    [0x02, 0x00, 0x00, 0x00],
+    [0x04, 0x00, 0x00, 0x00],
+    [0x08, 0x00, 0x00, 0x00],
+    [0x10, 0x00, 0x00, 0x00],
+    [0x20, 0x00, 0x00, 0x00],
+    [0x40, 0x00, 0x00, 0x00],
+    [0x80, 0x00, 0x00, 0x00],
+    [0x1B, 0x00, 0x00, 0x00],
+    [0x36, 0x00, 0x00, 0x00]
+], dtype=np.uint8)
+
 #funções para manipular os valores hexadecimais
 def char_hex(c):
     return hex(ord(c))
@@ -45,6 +59,20 @@ def is_hex(s: int) -> bool:
     except (ValueError, TypeError):
         return False
 
+#Função para rotacionar uma palavra (vetor de 4 bytes) para a esquerda
+def rot_word(w: np.array):
+    return np.roll(w, -1)
+
+#Função para aplicar a substituição de bytes em uma palavra (vetor de 4 bytes) usando a s-box
+def sub_word(w: np.array):
+    w_sub = w.copy()
+    for i in range(w.shape[0]):
+        hex_a = w_sub[i]
+        ax0 = hex_high(hex_a)
+        ax1 = hex_low(hex_a)
+        w_sub[i] = s_box[ax0, ax1]
+    return w_sub
+
 
 # função para multiplicação em GF(2^8)
 # https://en.wikipedia.org/wiki/Finite_field_arithmetic
@@ -64,6 +92,22 @@ def gf_mul(a: np.uint8, b: np.uint8):
             a ^= 0x1b # 0x1b corresponde ao polinômio irredutível sem o termo maior
 
     return p
+
+#Função para expandir a chave de 16 bytes (128 bits) em 44 palavras (4 bytes cada) para o AES-128
+def key_expansion(key: np.array):
+
+    w = np.zeros((4, 44), dtype=np.uint8)
+    w[:, :4] = key.reshape(4, 4).T
+
+    for i in range(4, 44):
+        temp = w[:, i - 1].copy()
+
+        if i % 4 == 0:
+            temp = sub_word(rot_word(temp)) ^ rcon[i // 4 - 1]
+
+        w[:, i] = w[:, i - 4] ^ temp
+
+    return w
         
 
 def key_add(A, k): #
@@ -90,3 +134,34 @@ def rows_shift(A:np.array):
 def columns_mix():
     ...
 print("Hello World")
+
+# ==========================================
+# TESTE DA EXPANSÃO DE CHAVE
+# ==========================================
+if __name__ == "__main__":
+    # 1. A chave de teste fornecida
+    key_hex_string = "6D727561766564703132333435363738"
+    
+    # 2. Converte a string hexadecimal em um array de 16 bytes (uint8)
+    key_bytes = np.array([int(key_hex_string[i:i+2], 16) for i in range(0, 32, 2)], dtype=np.uint8)
+    
+    # 3. Chama a sua função!
+    chaves_expandidas = key_expansion(key_bytes)
+    
+    # 4. Extrai a chave da Rodada 1 (colunas 4 a 7 da matriz w)
+    round_1_key_matrix = chaves_expandidas[:, 4:8]
+    
+    # 5. Formata a saída de volta para string Hexadecimal para conferir
+    # Transpõe (.T) e achata (.flatten()) para ler na ordem correta
+    round_1_hex = "".join(f"{byte:02X}" for byte in round_1_key_matrix.T.flatten())
+    
+    print("--- RESULTADO DO TESTE ---")
+    print(f"Chave Inicial: {key_hex_string.upper()}")
+    print(f"Chave Rodada 1 Calculada: {round_1_hex}")
+    
+    # O resultado esperado matemático para essa chave no AES
+    expected = "69E872F71F8D16872EBF25B31B89128B"
+    if round_1_hex == expected:
+        print("✅ SUCESSO! A sua Expansão de Chave está perfeita!")
+    else:
+        print(f"❌ ERRO! O esperado era: {expected}")
