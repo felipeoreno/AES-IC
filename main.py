@@ -113,7 +113,8 @@ def key_add(A, k): #
     #k é a subchave do tamanho de A com elementos em hexadecimal
     #Cada elemento do GF(2^7) é um Byte representado em vetor de 8bits (representação matemática de um polinomio), e é feito a soma modulo 2 entre eles na operação de soma (equivale a xor)
     return np.bitwise_xor(A,k)
-    ...
+    
+#Função que substitui os bytes usando uma tabela com resultados de s-box
 def byte_sub(A:np.array): #A é a matrix de estado de hexadecimais
     for i in range(A.shape[0]):
         for j in range(A.shape[1]):
@@ -124,7 +125,17 @@ def byte_sub(A:np.array): #A é a matrix de estado de hexadecimais
             A[i,j] = s_box[ax0,ax1] #s_box(5,0) = 0x53 = "S"
             #então a = "P" -> s_box -> "S", no entanto nem todas as transformações resultam em caracteres imprimíveis.
     return A #matrix de estado modificada
+
 #tabela para s-box e galois field, o inverso você olha para o valor resultante e depois para o que resultou
+def inv_byte_sub(A:np.array): #inverte a transformação da substituição de byte
+    for i in range(A.shape[0]):
+        for j in range(A.shape[1]):
+            hex_a = A[i,j]
+            #ex: se a = "S" = 0x53
+            linha, col = np.where(s_box == hex_a) #descobre valores que geraram hex_a procurando ele na tabela
+            A[i,j] = (hex(linha) << 4) +hex(col) # linha = 5, col = 3, A[i,j] = 0x53
+            #então a = "S" -> "inv_s_box" -> "P", no entanto nem todas as transformações resultam em caracteres imprimíveis.
+    return A #matrix de estado modificada
 def rows_shift(A:np.array):
     A[1,0], A[1,1], A[1,2], A[1,3] = A[1,1], A[1,2], A[1,3], A[1,0]
     A[2,0], A[2,1], A[2,2], A[2,3] = A[2,2], A[2,3], A[2,0], A[2,1]
