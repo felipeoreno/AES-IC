@@ -200,32 +200,23 @@ def fbf_to_hex_string(matrix): #transforma matrix 4x4 em uma string em que cada 
 def cifrar(msg, k, key_is_hex):
     A = make_matrix(msg, False)
     
-    if key_is_hex:
+    if key_is_hex: #transforma a chave em uma array de valores
         key = np.array([int(k[i:i+2], 16) for i in range(0, 32, 2)], dtype=np.uint8)
     else:
         key = np.array([ord(k[i]) for i in range(len(k))], dtype=np.uint8)
-    w = key_expansion(key)
+    w = key_expansion(key) #gera subchaves e colocar em uma matrix w
 
     k_mat = np.zeros((4,4), dtype=np.uint8) #coloca a chave em uma matrix para conseguir fazer a adição de chave
     for i in range(4):
         for j in range(4):
             k_mat[j,i] = key[i*4+j]
-    #print("A: ", fbf_to_hex_string(A))
-    #print("k_mat: ", fbf_to_hex_string(k_mat))
-    A = key_add(A,k_mat)
+    A = key_add(A,k_mat) #adiciona k0, round 0
     for i in range(1,11): #10 rounds porque a chave tem 128 bits
-        #print("Round : ", i)
         A = byte_sub(A)
-        #print("A_sub: ", fbf_to_hex_string(A))
         rows_shift(A)
-        #print("A_row_shift: ", fbf_to_hex_string(A))
         if i != 10: #omite na última rodada
             columns_mix(A)
-            #print("A_column_mix: ", fbf_to_hex_string(A))
         sub_key = w[:, i*4:(i+1)*4]
-        #print("subkey: ",fbf_to_hex_string(sub_key))
         A = key_add(A,sub_key)
-        #print("A_key_add: ", fbf_to_hex_string(A))
-        #print()
     hex_string = fbf_to_hex_string(A)
     return hex_string #string hexadecimal
