@@ -287,3 +287,18 @@ def exemplo_cifra():
     print(cifrar("ABCDEFGHIJKLMNOP","000102030405060708090a0b0c0d0e0f",True))
 def exemplo_decifra():
     print(decifrar("9cdd85de85b48bed892f02d8a5cbdacb",True,"000102030405060708090a0b0c0d0e0f",True))
+
+op = int(input("Escolha a operação a ser realizada (0 - cifrar; 1 - decifrar): "))
+if(op):
+    msg_is_hex = input("Escolha a base numérica da mensagem (0 - decimal; 1 - hexadecimal): ") == 1
+msg = input("Insira a mensagem: ")
+key = input("Insira a chave: ")
+if len(key) == 16:
+    key_is_hex = False
+elif len(key) == 32:
+    key_is_hex = True
+
+if(op):
+    print(decifrar(msg,msg_is_hex,key,key_is_hex))
+else:
+    print(cifrar(msg,key,key_is_hex))
