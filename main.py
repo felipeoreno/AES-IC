@@ -154,33 +154,59 @@ def columns_mix(A:np.array):
 
 print("Hello World")
 
-# ==========================================
-# TESTE DA EXPANSÃO DE CHAVE
-# ==========================================
-if __name__ == "__main__":
-    # 1. A chave de teste fornecida
-    key_hex_string = "6D727561766564703132333435363738"
-    
-    # 2. Converte a string hexadecimal em um array de 16 bytes (uint8)
-    key_bytes = np.array([int(key_hex_string[i:i+2], 16) for i in range(0, 32, 2)], dtype=np.uint8)
-    
-    # 3. Chama a sua função!
-    chaves_expandidas = key_expansion(key_bytes)
-    
-    # 4. Extrai a chave da Rodada 1 (colunas 4 a 7 da matriz w)
-    round_1_key_matrix = chaves_expandidas[:, 4:8]
-    
-    # 5. Formata a saída de volta para string Hexadecimal para conferir
-    # Transpõe (.T) e achata (.flatten()) para ler na ordem correta
-    round_1_hex = "".join(f"{byte:02X}" for byte in round_1_key_matrix.T.flatten())
-    
-    print("--- RESULTADO DO TESTE ---")
-    print(f"Chave Inicial: {key_hex_string.upper()}")
-    print(f"Chave Rodada 1 Calculada: {round_1_hex}")
-    
-    # O resultado esperado matemático para essa chave no AES
-    expected = "69E872F71F8D16872EBF25B31B89128B"
-    if round_1_hex == expected:
-        print("✅ SUCESSO! A sua Expansão de Chave está perfeita!")
+def test():
+    # ==========================================
+    # TESTE DA EXPANSÃO DE CHAVE
+    # ==========================================
+    if __name__ == "__main__":
+        # 1. A chave de teste fornecida
+        key_hex_string = "6D727561766564703132333435363738"
+        
+        # 2. Converte a string hexadecimal em um array de 16 bytes (uint8)
+        key_bytes = np.array([int(key_hex_string[i:i+2], 16) for i in range(0, 32, 2)], dtype=np.uint8)
+        
+        # 3. Chama a sua função!
+        chaves_expandidas = key_expansion(key_bytes)
+        
+        # 4. Extrai a chave da Rodada 1 (colunas 4 a 7 da matriz w)
+        round_1_key_matrix = chaves_expandidas[:, 4:8]
+        
+        # 5. Formata a saída de volta para string Hexadecimal para conferir
+        # Transpõe (.T) e achata (.flatten()) para ler na ordem correta
+        round_1_hex = "".join(f"{byte:02X}" for byte in round_1_key_matrix.T.flatten())
+        
+        print("--- RESULTADO DO TESTE ---")
+        print(f"Chave Inicial: {key_hex_string.upper()}")
+        print(f"Chave Rodada 1 Calculada: {round_1_hex}")
+        
+        # O resultado esperado matemático para essa chave no AES
+        expected = "69E872F71F8D16872EBF25B31B89128B"
+        if round_1_hex == expected:
+            print("✅ SUCESSO! A sua Expansão de Chave está perfeita!")
+        else:
+            print(f"❌ ERRO! O esperado era: {expected}")
+
+def make_matrix(A, it_is_hex): #A é uma string ou vetor de hexadecimais
+    matrix = np.zeros((4,4), dtype=np.uint8)
+    if it_is_hex:
+        for i in range(4):
+            for j in range(4):
+                matrix[j,i] = A[i*4+j]
     else:
-        print(f"❌ ERRO! O esperado era: {expected}")
+        for i in range(4):
+            for j in range(4):
+                matrix[j,i] = hex(ord(A[i*4+j]))
+
+def cifrar(msg, key):
+    A = make_matrix(msg, False)
+    w = key_expansion(key)
+    A = key_add(A,key)
+    for i in range(0,10): #10 rounds porque a chave tem 128 bits
+        A = byte_sub(A)
+        rows_shift(A)
+        if i != 9: #omite na última rodada
+            columns_mix(A)
+        sub_key = w[i*4:(i+1)*4]
+        A = key_add(A,sub_key)
+    return A
+print(cifrar("00112233445566778899aabbccddeeff","000102030405060708090a0b0c0d0e0f"))
