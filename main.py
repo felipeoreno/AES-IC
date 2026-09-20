@@ -1,6 +1,6 @@
 import numpy as np
 
-#s-box table Substitution table
+#s-box Tabela de Substituição
 s_box = np.array([
     [0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76],
     [0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0],
@@ -34,6 +34,9 @@ rcon = np.array([
     [0x36, 0x00, 0x00, 0x00]
 ], dtype=np.uint8)
 
+#testar valor para ver se é possível transformar em texto
+def is_char(value):
+    return 0 <= value <= 0x10FFFF
 #funções para manipular os valores hexadecimais
 def char_hex(c):
     return ord(c)
@@ -126,7 +129,7 @@ def inv_byte_sub(A:np.array): #inverte a transformação da substituição de by
             hex_a = A[i,j]
             #ex: se a = "S" = 0x53
             linha, col = np.where(s_box == hex_a) #descobre valores que geraram hex_a procurando ele na tabela
-            A[i,j] = (linha << 4) +col # linha = 5, col = 3, A[i,j] = 0x53
+            A[i,j] = (linha[0] << 4) +col[0] # linha = 5, col = 3, A[i,j] = 0x53
             #então a = "S" -> "inv_s_box" -> "P", no entanto nem todas as transformações resultam em caracteres imprimíveis.
     return A #matrix de estado modificada
 def rows_shift(A:np.array):
@@ -218,6 +221,12 @@ def fbf_to_hex_string(matrix): #transforma matrix 4x4 em uma string em que cada 
     hex_string = ''.join(f'{x:02x}' for x in A.flatten())
     return hex_string
 
+def fbf_to_string(matrix):
+    A = ""
+    for i in range(4):
+        for j in range(4):
+            A = A+chr(matrix[j,i])
+    return A
 def cifrar(msg, k, key_is_hex):
     A = make_matrix(msg, False)
     
@@ -241,3 +250,40 @@ def cifrar(msg, k, key_is_hex):
         A = key_add(A,sub_key)
     hex_string = fbf_to_hex_string(A)
     return hex_string #string hexadecimal
+
+def decifrar(msg, msg_is_hex, k, key_is_hex):
+    A = make_matrix(msg, msg_is_hex)
+    if key_is_hex: #transforma a chave em uma array de valores
+        key = np.array([int(k[i:i+2], 16) for i in range(0, 32, 2)], dtype=np.uint8)
+    else:
+        key = np.array([ord(k[i]) for i in range(len(k))], dtype=np.uint8)
+    w = key_expansion(key) #gera subchaves e colocar em uma matrix w
+
+    for i in range(10, 0, -1):
+        sub_key = w[:, i*4:(i+1)*4]
+        A = key_add(A,sub_key)
+        if i != 10: #omite na última rodada
+            inv_columns_mix(A)
+        inv_rows_shift(A)
+        A = inv_byte_sub(A)
+    k_mat = np.zeros((4,4), dtype=np.uint8) #coloca a chave em uma matrix para conseguir fazer a adição de chave
+    for i in range(4):
+        for j in range(4):
+            k_mat[j,i] = key[i*4+j]
+    A = key_add(A,k_mat) #adiciona k0, round 0
+    A_is_text = True
+    for a0 in A:
+        for a1 in a0:
+            if(not is_char(a1)): #se um dos elementos de A não tiver equivalente em texto, A é hexadecimal
+                print(a1)
+                A_is_text = False
+    if(not A_is_text):
+        result = fbf_to_hex_string(A)
+    else:
+        result = fbf_to_string(A)
+    return result #string hexadecimal
+
+def exemplo_cifra():
+    print(cifrar("ABCDEFGHIJKLMNOP","000102030405060708090a0b0c0d0e0f",True))
+def exemplo_decifra():
+    print(decifrar("9cdd85de85b48bed892f02d8a5cbdacb",True,"000102030405060708090a0b0c0d0e0f",True))
