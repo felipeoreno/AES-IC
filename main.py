@@ -189,8 +189,8 @@ def make_matrix(A, it_is_hex): #A é uma string, com letras ou valores que repre
                 matrix[j,i] = ord(A[i*4+j])
     return matrix
 
-def fbf_to_hex_string(matrix):
-    A = np.zeros((4,4), dtype=np.uint8)
+def fbf_to_hex_string(matrix): #transforma matrix 4x4 em uma string em que cada par de letras representa um hexadecimal (o inverso do make_matrix)
+    A = np.zeros((4,4), dtype=np.uint8) 
     for i in range(4):
         for j in range(4):
             A[i,j] = matrix[j,i]
@@ -198,7 +198,7 @@ def fbf_to_hex_string(matrix):
     return hex_string
 
 def cifrar(msg, k, key_is_hex):
-    A = make_matrix(msg, True)
+    A = make_matrix(msg, False)
     
     if key_is_hex:
         key = np.array([int(k[i:i+2], 16) for i in range(0, 32, 2)], dtype=np.uint8)
@@ -229,7 +229,3 @@ def cifrar(msg, k, key_is_hex):
         #print()
     hex_string = fbf_to_hex_string(A)
     return hex_string #string hexadecimal
-ans = ""
-A = cifrar("00112233445566778899aabbccddeeff","000102030405060708090a0b0c0d0e0f",True)
-
-print(A)
