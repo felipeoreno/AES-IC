@@ -133,10 +133,31 @@ def rows_shift(A:np.array):
     A[1,0], A[1,1], A[1,2], A[1,3] = A[1,1], A[1,2], A[1,3], A[1,0]
     A[2,0], A[2,1], A[2,2], A[2,3] = A[2,2], A[2,3], A[2,0], A[2,1]
     A[3,0], A[3,1], A[3,2], A[3,3] = A[3,3], A[3,0], A[3,1], A[3,2]
+def inv_rows_shift(A:np.array):
+    A[1,0], A[1,1], A[1,2], A[1,3] = A[1,3], A[1,0], A[1,1], A[1,2]
+    A[2,0], A[2,1], A[2,2], A[2,3] = A[2,2], A[2,3], A[2,0], A[2,1]
+    A[3,0], A[3,1], A[3,2], A[3,3] = A[3,1], A[3,2], A[3,3], A[3,0]
 def columns_mix(A:np.array):
+    # Cria uma matriz de resultado para substituir cada coluna da matriz estado
     result = np.zeros((4,), dtype=np.uint8)
+    # Matriz de multiplicação
     mat = np.array([2, 3, 1, 1], dtype=np.uint8)
 
+    # Multiplica cada coluna da matriz estado
+    for i in range(4):
+        col = A[:,i]
+        result[0] = gf_mul(mat[0],col[0])^gf_mul(mat[1],col[1])^gf_mul(mat[2],col[2])^gf_mul(mat[3],col[3])
+        result[1] = gf_mul(mat[3],col[0])^gf_mul(mat[0],col[1])^gf_mul(mat[1],col[2])^gf_mul(mat[2],col[3])
+        result[2] = gf_mul(mat[2],col[0])^gf_mul(mat[3],col[1])^gf_mul(mat[0],col[2])^gf_mul(mat[1],col[3])
+        result[3] = gf_mul(mat[1],col[0])^gf_mul(mat[2],col[1])^gf_mul(mat[3],col[2])^gf_mul(mat[0],col[3])
+        A[:,i] = result
+def inv_columns_mix(A:np.array):
+    # Cria uma matriz de resultado para substituir cada coluna da matriz estado
+    result = np.zeros((4,), dtype=np.uint8)
+    # Matriz de multiplicação
+    mat = np.array([14, 11, 13, 9], dtype=np.uint8)
+
+    # Multiplica cada coluna da matriz estado
     for i in range(4):
         col = A[:,i]
         result[0] = gf_mul(mat[0],col[0])^gf_mul(mat[1],col[1])^gf_mul(mat[2],col[2])^gf_mul(mat[3],col[3])
