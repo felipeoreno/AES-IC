@@ -36,7 +36,7 @@ rcon = np.array([
 
 #funções para manipular os valores hexadecimais
 def char_hex(c):
-    return hex(ord(c))
+    return ord(c)
 
 def hex_to_char(h):
     return chr(h)
@@ -49,15 +49,8 @@ def hex_high(h): #pega os 4 bits mais significativos do número hexadecimal
 
 def hex_idx(h, axis):
     if axis: #axis == 1, o eixo do hex_low (parte direita do hexadecimal)
-        return int(hex_low(h),16)
-    return int(hex_high(h),16) #axis == 0, mesmo do hex_high
-
-def is_hex(s: int) -> bool:
-    try:
-        int(s, 16)
-        return True
-    except (ValueError, TypeError):
-        return False
+        return hex_low(h)
+    return hex_high(h) #axis == 0, mesmo do hex_high
 
 #Função para rotacionar uma palavra (vetor de 4 bytes) para a esquerda
 def rot_word(w: np.array):
@@ -133,7 +126,7 @@ def inv_byte_sub(A:np.array): #inverte a transformação da substituição de by
             hex_a = A[i,j]
             #ex: se a = "S" = 0x53
             linha, col = np.where(s_box == hex_a) #descobre valores que geraram hex_a procurando ele na tabela
-            A[i,j] = (hex(linha) << 4) +hex(col) # linha = 5, col = 3, A[i,j] = 0x53
+            A[i,j] = (linha << 4) +col # linha = 5, col = 3, A[i,j] = 0x53
             #então a = "S" -> "inv_s_box" -> "P", no entanto nem todas as transformações resultam em caracteres imprimíveis.
     return A #matrix de estado modificada
 def rows_shift(A:np.array):
@@ -141,7 +134,7 @@ def rows_shift(A:np.array):
     A[2,0], A[2,1], A[2,2], A[2,3] = A[2,2], A[2,3], A[2,0], A[2,1]
     A[3,0], A[3,1], A[3,2], A[3,3] = A[3,3], A[3,0], A[3,1], A[3,2]
 def columns_mix(A:np.array):
-    result = np.zeros((4, 1), dtype=np.uint8)
+    result = np.zeros((4,), dtype=np.uint8)
     mat = np.array([2, 3, 1, 1], dtype=np.uint8)
 
     for i in range(4):
@@ -150,9 +143,7 @@ def columns_mix(A:np.array):
         result[1] = gf_mul(mat[3],col[0])^gf_mul(mat[0],col[1])^gf_mul(mat[1],col[2])^gf_mul(mat[2],col[3])
         result[2] = gf_mul(mat[2],col[0])^gf_mul(mat[3],col[1])^gf_mul(mat[0],col[2])^gf_mul(mat[1],col[3])
         result[3] = gf_mul(mat[1],col[0])^gf_mul(mat[2],col[1])^gf_mul(mat[3],col[2])^gf_mul(mat[0],col[3])
-        A[:,i] = col
-
-print("Hello World")
+        A[:,i] = result
 
 def test():
     # ==========================================
@@ -186,27 +177,59 @@ def test():
         else:
             print(f"❌ ERRO! O esperado era: {expected}")
 
-def make_matrix(A, it_is_hex): #A é uma string ou vetor de hexadecimais
+def make_matrix(A, it_is_hex): #A é uma string, com letras ou valores que representam hexadecimais
     matrix = np.zeros((4,4), dtype=np.uint8)
     if it_is_hex:
         for i in range(4):
             for j in range(4):
-                matrix[j,i] = A[i*4+j]
+                matrix[j,i] = int(A[(i*4+j)*2:(i*4+j+1)*2],16) #pega de 2 em 2 bytes
     else:
         for i in range(4):
             for j in range(4):
-                matrix[j,i] = hex(ord(A[i*4+j]))
+                matrix[j,i] = ord(A[i*4+j])
+    return matrix
 
-def cifrar(msg, key):
-    A = make_matrix(msg, False)
+def fbf_to_hex_string(matrix):
+    A = np.zeros((4,4), dtype=np.uint8)
+    for i in range(4):
+        for j in range(4):
+            A[i,j] = matrix[j,i]
+    hex_string = ''.join(f'{x:02x}' for x in A.flatten())
+    return hex_string
+
+def cifrar(msg, k, key_is_hex):
+    A = make_matrix(msg, True)
+    
+    if key_is_hex:
+        key = np.array([int(k[i:i+2], 16) for i in range(0, 32, 2)], dtype=np.uint8)
+    else:
+        key = np.array([ord(k[i]) for i in range(len(k))], dtype=np.uint8)
     w = key_expansion(key)
-    A = key_add(A,key)
-    for i in range(0,10): #10 rounds porque a chave tem 128 bits
+
+    k_mat = np.zeros((4,4), dtype=np.uint8) #coloca a chave em uma matrix para conseguir fazer a adição de chave
+    for i in range(4):
+        for j in range(4):
+            k_mat[j,i] = key[i*4+j]
+    #print("A: ", fbf_to_hex_string(A))
+    #print("k_mat: ", fbf_to_hex_string(k_mat))
+    A = key_add(A,k_mat)
+    for i in range(1,11): #10 rounds porque a chave tem 128 bits
+        #print("Round : ", i)
         A = byte_sub(A)
+        #print("A_sub: ", fbf_to_hex_string(A))
         rows_shift(A)
-        if i != 9: #omite na última rodada
+        #print("A_row_shift: ", fbf_to_hex_string(A))
+        if i != 10: #omite na última rodada
             columns_mix(A)
-        sub_key = w[i*4:(i+1)*4]
+            #print("A_column_mix: ", fbf_to_hex_string(A))
+        sub_key = w[:, i*4:(i+1)*4]
+        #print("subkey: ",fbf_to_hex_string(sub_key))
         A = key_add(A,sub_key)
-    return A
-print(cifrar("00112233445566778899aabbccddeeff","000102030405060708090a0b0c0d0e0f"))
+        #print("A_key_add: ", fbf_to_hex_string(A))
+        #print()
+    hex_string = fbf_to_hex_string(A)
+    return hex_string #string hexadecimal
+ans = ""
+A = cifrar("00112233445566778899aabbccddeeff","000102030405060708090a0b0c0d0e0f",True)
+
+print(A)
