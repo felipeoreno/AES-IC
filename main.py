@@ -1,3 +1,14 @@
+"""
+Pré-requisitos de compilação: o código depende apenas do pacote numpy, que pode ser instalado pelo comando:
+    pip install numpy
+
+Durante execuçao, na entrada da mensagem, caso o usuário decida decifrar uma mensagem, o programa questiona
+o usuário se a entrada está no formato decimal ou hexadecimal. Em ambos os casos, a entrada deve possuir 
+32 caracteres. Para cifragem, a mensagem sempre deve possuir 16 caracteres.
+
+O programa identifica sozinho se a chave está em formato de string ou hexadecimal.
+"""
+
 import numpy as np
 
 #s-box Tabela de Substituição
@@ -69,7 +80,6 @@ def sub_word(w: np.array):
         w_sub[i] = s_box[ax0, ax1]
     return w_sub
 
-
 # função para multiplicação em GF(2^7)
 # https://en.wikipedia.org/wiki/Finite_field_arithmetic
 def gf_mul(a: np.uint8, b: np.uint8) -> np.uint8:
@@ -102,14 +112,13 @@ def key_expansion(key: np.array):
         w[:, i] = w[:, i - 4] ^ temp
 
     return w
-        
 
 def key_add(A, k): #
     #A é a matrix estado com elementos em hexadecimal
     #k é a subchave do tamanho de A com elementos em hexadecimal
     #Cada elemento do GF(2^7) é um Byte representado em vetor de 8bits (representação matemática de um polinomio), e é feito a soma modulo 2 entre eles na operação de soma (equivale a xor)
     return np.bitwise_xor(A,k)
-    
+
 #Função que substitui os bytes usando uma tabela com resultados de s-box
 def byte_sub(A:np.array): #A é a matrix de estado de hexadecimais
     for i in range(A.shape[0]):
@@ -132,14 +141,17 @@ def inv_byte_sub(A:np.array): #inverte a transformação da substituição de by
             A[i,j] = (linha[0] << 4) +col[0] # linha = 5, col = 3, A[i,j] = 0x53
             #então a = "S" -> "inv_s_box" -> "P", no entanto nem todas as transformações resultam em caracteres imprimíveis.
     return A #matrix de estado modificada
+
 def rows_shift(A:np.array):
     A[1,0], A[1,1], A[1,2], A[1,3] = A[1,1], A[1,2], A[1,3], A[1,0]
     A[2,0], A[2,1], A[2,2], A[2,3] = A[2,2], A[2,3], A[2,0], A[2,1]
     A[3,0], A[3,1], A[3,2], A[3,3] = A[3,3], A[3,0], A[3,1], A[3,2]
+
 def inv_rows_shift(A:np.array):
     A[1,0], A[1,1], A[1,2], A[1,3] = A[1,3], A[1,0], A[1,1], A[1,2]
     A[2,0], A[2,1], A[2,2], A[2,3] = A[2,2], A[2,3], A[2,0], A[2,1]
     A[3,0], A[3,1], A[3,2], A[3,3] = A[3,1], A[3,2], A[3,3], A[3,0]
+
 def columns_mix(A:np.array):
     # Cria uma matriz de resultado para substituir cada coluna da matriz estado
     result = np.zeros((4,), dtype=np.uint8)
@@ -154,10 +166,11 @@ def columns_mix(A:np.array):
         result[2] = gf_mul(mat[2],col[0])^gf_mul(mat[3],col[1])^gf_mul(mat[0],col[2])^gf_mul(mat[1],col[3])
         result[3] = gf_mul(mat[1],col[0])^gf_mul(mat[2],col[1])^gf_mul(mat[3],col[2])^gf_mul(mat[0],col[3])
         A[:,i] = result
+
 def inv_columns_mix(A:np.array):
     # Cria uma matriz de resultado para substituir cada coluna da matriz estado
     result = np.zeros((4,), dtype=np.uint8)
-    # Matriz de multiplicação
+    # Matriz de multiplicação inversa
     mat = np.array([14, 11, 13, 9], dtype=np.uint8)
 
     # Multiplica cada coluna da matriz estado
@@ -168,38 +181,6 @@ def inv_columns_mix(A:np.array):
         result[2] = gf_mul(mat[2],col[0])^gf_mul(mat[3],col[1])^gf_mul(mat[0],col[2])^gf_mul(mat[1],col[3])
         result[3] = gf_mul(mat[1],col[0])^gf_mul(mat[2],col[1])^gf_mul(mat[3],col[2])^gf_mul(mat[0],col[3])
         A[:,i] = result
-
-def test():
-    # ==========================================
-    # TESTE DA EXPANSÃO DE CHAVE
-    # ==========================================
-    if __name__ == "__main__":
-        # 1. A chave de teste fornecida
-        key_hex_string = "6D727561766564703132333435363738"
-        
-        # 2. Converte a string hexadecimal em um array de 16 bytes (uint8)
-        key_bytes = np.array([int(key_hex_string[i:i+2], 16) for i in range(0, 32, 2)], dtype=np.uint8)
-        
-        # 3. Chama a sua função!
-        chaves_expandidas = key_expansion(key_bytes)
-        
-        # 4. Extrai a chave da Rodada 1 (colunas 4 a 7 da matriz w)
-        round_1_key_matrix = chaves_expandidas[:, 4:8]
-        
-        # 5. Formata a saída de volta para string Hexadecimal para conferir
-        # Transpõe (.T) e achata (.flatten()) para ler na ordem correta
-        round_1_hex = "".join(f"{byte:02X}" for byte in round_1_key_matrix.T.flatten())
-        
-        print("--- RESULTADO DO TESTE ---")
-        print(f"Chave Inicial: {key_hex_string.upper()}")
-        print(f"Chave Rodada 1 Calculada: {round_1_hex}")
-        
-        # O resultado esperado matemático para essa chave no AES
-        expected = "69E872F71F8D16872EBF25B31B89128B"
-        if round_1_hex == expected:
-            print("✅ SUCESSO! A sua Expansão de Chave está perfeita!")
-        else:
-            print(f"❌ ERRO! O esperado era: {expected}")
 
 def make_matrix(A, it_is_hex): #A é uma string, com letras ou valores que representam hexadecimais
     matrix = np.zeros((4,4), dtype=np.uint8)
@@ -293,11 +274,21 @@ if(op):
     msg_is_hex = input("Escolha a base numérica da mensagem (0 - decimal; 1 - hexadecimal): ") == "1"
 
 msg = input("Insira a mensagem: ")
+if op == 0 and len(msg) != 16:
+    print("Erro: a mensagem precisa ter 16 caracteres")
+    exit()
+if op == 1 and len(msg) != 32:
+    print("Erro: a mensagem precisa ter 32 caracteres")
+    exit()
 key = input("Insira a chave: ")
+# Detecta se a chave de 128 bits está em base hexadecimal ou formato de string
 if len(key) == 16:
     key_is_hex = False
 elif len(key) == 32:
     key_is_hex = True
+else:
+    print("Erro: a chave precisa ter 128 bits")
+    exit()
 
 if(op):
     print(decifrar(msg,msg_is_hex,key,key_is_hex))
