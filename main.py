@@ -290,7 +290,7 @@ def exemplo_decifra():
 
 op = int(input("Escolha a operação a ser realizada (0 - cifrar; 1 - decifrar): "))
 if(op):
-    msg_is_hex = input("Escolha a base numérica da mensagem (0 - decimal; 1 - hexadecimal): ") == 1
+    msg_is_hex = int(input("Escolha a base numérica da mensagem (0 - decimal; 1 - hexadecimal): ")) == 1
 msg = input("Insira a mensagem: ")
 key = input("Insira a chave: ")
 if len(key) == 16:
